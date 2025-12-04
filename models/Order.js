@@ -4,8 +4,9 @@ const orderSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     ebook: { type: mongoose.Schema.Types.ObjectId, ref: "Ebook" },
-    razorpayOrderId: String,
-    amount: Number,
+    productId: { type: String, required: true },
+    razorpayOrderId: { type: String },
+    amount: { type: Number },
     currency: { type: String, default: "INR" },
     status: {
       type: String,

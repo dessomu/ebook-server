@@ -1,9 +1,11 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 exports.register = async (req, res) => {
   try {
     const { email, password, name } = req.body;
+    console.log(email, password, name);
 
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: "Email already exists" });
@@ -11,13 +13,20 @@ exports.register = async (req, res) => {
     user = new User({ email, password, name });
     await user.save();
 
+    console.log("User signed up", user);
+
+    console.log(process.env.JWT_SECRET);
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
-    res.json({ token, user: { id: user._id, email, name } });
+    return res.json({
+      token,
+      user: { id: user._id, email, name, role: user.role },
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("REGISTER ERROR:", err);
+    return res.status(500).json({ message: err.message });
   }
 };
 

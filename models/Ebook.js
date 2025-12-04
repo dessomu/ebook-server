@@ -7,6 +7,8 @@ const ebookSchema = new mongoose.Schema(
     price: { type: Number },
     cloudinaryPublicId: { type: String }, // PDF stored here
     coverUrl: { type: String },
+    coverPublicId: { type: String }, // Cover stored here
+    productId: { type: String, required: true, index: true },
   },
   { timestamps: true }
 );

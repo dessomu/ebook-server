@@ -26,11 +26,18 @@ exports.verify = async (req, res) => {
     order.status = "paid";
     await order.save();
 
-    await Purchase.create({
+    const alreadyPurchased = await Purchase.findOne({
       user: order.user,
-      ebook: order.ebook,
-      order: order._id,
+      productId: order.productId,
     });
+
+    if (!alreadyPurchased) {
+      await Purchase.create({
+        user: order.user,
+        productId: order.productId,
+        order: order._id,
+      });
+    }
 
     return res.status(200).json({ success: true, order: order });
   } catch (error) {
@@ -38,5 +45,56 @@ exports.verify = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Server error verifying payment" });
+  }
+};
+
+exports.webhook = async (req, res) => {
+  try {
+    const body = req.body.toString(); // raw string
+
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+      .update(body)
+      .digest("hex");
+
+    const receivedSignature = req.headers["x-razorpay-signature"];
+
+    if (expectedSignature !== receivedSignature) {
+      return res.status(400).json({ status: "invalid signature" });
+    }
+
+    const event = JSON.parse(body);
+
+    // ONLY handle successful payments
+    if (event.event === "payment.captured") {
+      const rOrderId = event.payload.payment.entity.order_id;
+
+      // find our order by Razorpay ID
+      const order = await Order.findOne({ razorpayOrderId: rOrderId });
+
+      if (order && order.status !== "paid") {
+        order.status = "paid";
+        await order.save();
+
+        const alreadyPurchased = await Purchase.findOne({
+          user: order.user,
+          productId: order.productId,
+        });
+
+        if (!alreadyPurchased) {
+          // create Purchase record
+          await Purchase.create({
+            user: order.user,
+            productId: order.productId,
+            order: order._id,
+          });
+        }
+      }
+    }
+
+    res.json({ status: "ok" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ status: "error" });
   }
 };

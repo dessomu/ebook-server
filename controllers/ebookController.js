@@ -30,18 +30,44 @@ exports.get = async (req, res) => {
   }
 };
 
+exports.status = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const ebookId = req.params.id;
+
+    const ebook = await Ebook.findById(ebookId);
+    if (!ebook) return res.status(404).json({ message: "Ebook not found" });
+
+    const purchased = await Purchase.findOne({
+      user: userId,
+      productId: ebook.productId,
+    });
+
+    return res.json({
+      purchased: !!purchased, // true or false
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to check status" });
+  }
+};
+
 exports.download = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
 
-    const purchased = await Purchase.findOne({ user: userId, ebook: id });
-    if (!purchased) return res.status(403).json({ message: "Not purchased" });
-
     const ebook = await Ebook.findById(id);
     if (!ebook) return res.status(404).json({ message: "Ebook not found" });
 
-    const url = generateSignedUrl(ebook.cloudinaryPublicId);
+    const purchased = await Purchase.findOne({
+      user: userId,
+      productId: ebook.productId,
+    });
+    if (!purchased) return res.status(403).json({ message: "Not purchased" });
+
+    const url = generateSignedUrl(ebook.cloudinaryPublicId, ebook.title);
+    console.log(url);
 
     return res.json({ url });
   } catch (error) {
