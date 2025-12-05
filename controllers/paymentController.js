@@ -1,3 +1,4 @@
+require("dotenv").config;
 const crypto = require("crypto");
 const Order = require("../models/Order");
 const Purchase = require("../models/Purchase");
