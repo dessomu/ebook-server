@@ -27,6 +27,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 
 app.get("/", (req, res) => res.send("API running"));
+app.get("/health", (req, res) => res.send("Server is up.."));
 
 app.listen(process.env.PORT, () =>
   console.log(`Server running on port http://localhost:${process.env.PORT}`)
